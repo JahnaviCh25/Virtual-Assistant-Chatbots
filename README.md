@@ -106,7 +106,8 @@ Click the **"Start Talking"** button and speak to the assistant.
 📊 **Analytics Dashboard** – Track and visualize user interaction data.  
 💡 **Integration with IoT** – Connect virtual assistants with smart home devices.  
 
----
+---<img width="629" alt="DialogGPt" src="https://github.com/user-attachments/assets/5ae5d11d-bcc6-4382-a524-75d7bd379b6f" />
+
 
 ## **Conclusion**  
 
