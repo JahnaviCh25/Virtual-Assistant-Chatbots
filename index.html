@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Canva Avatar Website</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Meet JC's Virtual Assistant!</h1>
+        <div class="avatar-container">
+            <video id="avatar-video" controls autoplay>
+                <source src="https://raw.githubusercontent.com/JahnaviCh25/Avatar_canva/main/Welcome%20avatar.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <div class="description">
+            <p>This is our animated assistant created using Canva! Feel free to interact with it.</p>
+            <button id="start-record-btn">Start Talking</button>
+            <p id="result"></p>
+            <p id="response"></p> <!-- Paragraph to display the ChatGPT response -->
+        </div>
+    </div>
+
+    <script>
+        const startRecordBtn = document.getElementById('start-record-btn');
+        const resultParagraph = document.getElementById('result');
+        const responseParagraph = document.getElementById('response');
+        const avatarVideo = document.getElementById('avatar-video');
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+
+        const apiKey = "sk-proj-lSsBEM5NAMqvKNHdViH0T3BlbkFJleGR206NvIe9w0KoqrbQ";
+        const orgId = "org-org-ACJqOd4iJkK1zKscWrSnsQcF";
+
+        // Video play event listener
+        avatarVideo.addEventListener('ended', () => {
+            avatarVideo.currentTime = 0;
+            avatarVideo.pause();
+        });
+
+        // Voice recognition start event
+        recognition.onstart = function () {
+            resultParagraph.textContent = "Voice recognition activated. Speak now.";
+        };
+
+        // Handling the voice recognition result
+        recognition.onresult = async function (event) {
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            resultParagraph.textContent = "You said: " + transcript;
+
+            let response;
+
+            if (transcript.includes("time")) {
+                const currentTime = new Date().toLocaleTimeString();
+                response = `The current time is ${currentTime}.`;
+            } else {
+                try {
+                    response = await getChatGPTResponse(transcript);
+                } catch (error) {
+                    console.error("Error processing response:", error);
+                    response = "Sorry, something went wrong.";
+                }
+            }
+
+            responseParagraph.textContent = "Assistant: " + response;
+
+            try {
+                const audioUrl = await textToSpeech(response);
+                if (audioUrl) {
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+                }
+            } catch (error) {
+                console.error("Error generating speech:", error);
+            }
+        };
+
+        // Error handler for voice recognition
+        recognition.onerror = function (event) {
+            resultParagraph.textContent = "Error occurred in recognition: " + event.error;
+        };
+
+        // Button event listener to start recording
+        startRecordBtn.addEventListener('click', function () {
+            recognition.start();
+        });
+
+        // Function to get response from ChatGPT
+        async function getChatGPTResponse(userInput) {
+            try {
+                console.log("Sending request to OpenAI API..."); // Debugging log
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`,
+                        'OpenAI-Organization': orgId
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-3.5-turbo',
+                        messages: [{ role: 'user', content: userInput }]
+                    })
+                });
+
+                console.log("Response status:", response.status); // Debugging log
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log("Received data:", data); // Print the entire response data for inspection
+
+                // Validate and extract the response
+                if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+                    console.log("Extracted message:", data.choices[0].message.content); // Debugging log
+                    return data.choices[0].message.content || "No response received.";
+                } else {
+                    console.warn("Unexpected data format:", data); // Warning if data is not as expected
+                    return "Unexpected response format.";
+                }
+            } catch (error) {
+                console.error("Error fetching ChatGPT response:", error);
+                return "I couldn't understand. Please try again.";
+            }
+        }
+
+        // Function to convert text to speech
+        async function textToSpeech(text) {
+            try {
+                const response = await fetch('https://api.text-to-speech.example.com/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                return data.audio_url || null;
+            } catch (error) {
+                console.error("Error generating speech:", error);
+                return null;
+            }
+        }
+    </script>
+</body>
+</html>
